@@ -1,0 +1,81 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 22
+        versionCode 76
+        versionName "0.7.6"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    testImplementation 'junit:junit:4.12'
+    implementation files('libs/okhttp-3.6.0.jar')
+    implementation files('libs/okio-1.11.0.jar')
+}
+
+def releaseTime() {
+    return new Date().format("yyMMdd", TimeZone.getTimeZone("UTC"))
+}
+
+def fileName = "LightHttp_v${android.defaultConfig.versionName}_${releaseTime()}"
+
+task lightHttpRelease(type: Jar, dependsOn: assemble) {
+    //将本项目中的class文件打包到目标jar中
+    from 'build/intermediates/classes/release/'
+    exclude '**/BuildConfig.class'
+    exclude '**/R.class'
+    exclude '**/R$*.class'
+
+    archiveName fileName + '.jar'
+
+    manifest {
+        attributes 'Manifest-Version': android.defaultConfig.versionName
+        attributes 'Author': 'EUISDK Team'
+    }
+}
+
+task copyJar(type: Copy) {
+    from "build/libs/${fileName}.jar"
+    into "../target"
+}
+
+//build javadoc, dir: lighthttplib/build/docs
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    classpath += fileTree(include: ['*.jar'], dir: 'libs')
+    options {
+        encoding "UTF-8"
+        charSet 'UTF-8'
+        author true
+        version true
+        links "http://docs.oracle.com/javase/6/docs/api"
+    }
+}
+
+task zipJavadoc(dependsOn: javadoc, type: Zip) {
+    from('build/docs/javadoc/')
+    archiveName = "${fileName}_javadoc.zip"
+    destinationDir = file('../target')
+}
+
+lightHttpRelease.dependsOn assemble

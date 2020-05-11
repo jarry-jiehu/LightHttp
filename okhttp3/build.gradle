@@ -1,0 +1,55 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 22
+        versionCode 3600
+        versionName "3.6.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+}
+
+dependencies {
+    implementation project(':okio')
+}
+
+def releaseTime() {
+    return new Date().format("yyMMdd", TimeZone.getTimeZone("UTC"))
+}
+
+def fileName = "OKHTTP_v${android.defaultConfig.versionName}_${releaseTime()}"
+
+task okHttpRelease(type: Jar, dependsOn: assemble) {
+    //将本项目中的class文件打包到目标jar中
+    from 'build/intermediates/classes/release/'
+    exclude '**/BuildConfig.class'
+    exclude '**/R.class'
+    exclude '**/R$*.class'
+
+    exclude '**/letv/'
+
+    archiveName fileName + '.jar'
+
+    manifest {
+        attributes 'Manifest-Version':android.defaultConfig.versionName
+        attributes 'Author': 'EUISDK Team'
+    }
+}
+
+task copyJar(type: Copy){
+    from "build/libs/${fileName}.jar"
+    into "../target"
+}
+
+okHttpRelease.dependsOn assemble
